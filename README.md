@@ -1,6 +1,6 @@
 # Expresiones Regulares
 
-## Nom i cognoms
+## Nom i cognoms: Iker Martínez Rodríguez
 
 ## Tratamiento de ficheros de notas
 
