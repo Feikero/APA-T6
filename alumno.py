@@ -46,10 +46,12 @@ class Alumno:
 import re
 
 def leeAlumnos(ficAlumnos):
-    expresion = re.compile(r'\s*\d+\s+[\w\s]+[\d.]+\s*')
+    expresion = re.compile(r'\s*(?P<id>\d+)\s+(?P<nom>[\w\s]+?)\s+(?P<notes>[\d.\s]+)\s*')
     
     with open(ficAlumnos, 'rt') as fpAlumnos:
         for linea in fpAlumnos:
             match = expresion.search(linea)
             if match is not None:
-                print(match)
+                print(match['id'])
+                print(match['nom'])
+                print(match['notes'])
