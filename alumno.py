@@ -46,7 +46,11 @@ class Alumno:
 import re
 
 def leeAlumnos(ficAlumnos):
-    expresion = re.compile(r'\s*(?P<id>\d+)\s+(?P<nom>[\w\s]+?)\s+(?P<notes>[\d.\s]+)\s*')
+    expr_id = r'\s*(?P<id>\d+)\s+'
+    expr_nom = r'(?P<nom>[\w\s]+?)\s+'
+    expr_notes = r'(?P<notes>[\d.\s]+)\s*'
+
+    expresion = re.compile(expr_id + expr_nom + expr_notes)
     
     with open(ficAlumnos, 'rt') as fpAlumnos:
         for linea in fpAlumnos:
