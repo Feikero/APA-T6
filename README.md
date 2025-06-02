@@ -240,11 +240,242 @@ Inserte a continuación una captura de pantalla que muestre el resultado de ejec
 fichero `alumno.py` con la opción *verbosa*, de manera que se muestre el
 resultado de la ejecución de los tests unitarios.
 
+![alt text](image.png)
+
 ##### Código desarrollado
 
 Inserte a continuación los códigos fuente desarrollados en esta tarea, usando los
 comandos necesarios para que se realice el realce sintáctico en Python del mismo (no
 vale insertar una imagen o una captura de pantalla, debe hacerse en formato *markdown*).
+
+###### Código de alumno.py
+
+```python
+class Alumno:
+    """
+    Clase usada para el tratamiento de las notas de los alumnos. Cada uno
+    incluye los atributos siguientes:
+
+    numIden:   Número de identificación. Es un número entero que, en caso
+               de no indicarse, toma el valor por defecto 'numIden=-1'.
+    nombre:    Nombre completo del alumno.
+    notas:     Lista de números reales con las distintas notas de cada alumno.
+    """
+
+    def __init__(self, nombre, numIden=-1, notas=[]):
+        self.numIden = numIden
+        self.nombre = nombre
+        self.notas = [nota for nota in notas]
+
+    def __add__(self, other):
+        """
+        Devuelve un nuevo objeto 'Alumno' con una lista de notas ampliada con
+        el valor pasado como argumento. De este modo, añadir una nota a un
+        Alumno se realiza con la orden 'alumno += nota'.
+        """
+        return Alumno(self.nombre, self.numIden, self.notas + [other])
+
+    def media(self):
+        """
+        Devuelve la nota media del alumno.
+        """
+        return sum(self.notas) / len(self.notas) if self.notas else 0
+
+    def __repr__(self):
+        """
+        Devuelve la representación 'oficial' del alumno. A partir de copia
+        y pega de la cadena obtenida es posible crear un nuevo Alumno idéntico.
+        """
+        return f'Alumno("{self.nombre}", {self.numIden!r}, {self.notas!r})'
+
+    def __str__(self):
+        """
+        Devuelve la representación 'bonita' del alumno. Visualiza en tres
+        columnas separas por tabulador el número de identificación, el nombre
+        completo y la nota media del alumno con un decimal.
+        """
+        return f'{self.numIden}\t{self.nombre}\t{self.media():.1f}'
+
+import re
+
+def leeAlumnos(ficAlumnos):
+
+    """
+    Esta función lee el fichero de texto con los datos de todos los alumnos y devuelve un diccionario en el 
+    que la clave sea el nombre de cada alumno y su contenido el objeto `Alumno` correspondiente.
+
+
+    >>> alumnos = leeAlumnos('alumnos.txt')
+    >>> for alumno in alumnos:
+    ...     print(alumnos[alumno])
+    ...
+    171     Blanca Agirrebarrenetse 9.5
+    23      Carles Balcells de Lara 4.9
+    68      David Garcia Fuster     7.0
+    
+    """
+    expr_id = r'\s*(?P<id>\d+)\s+'
+    expr_nom= r'(?P<nom>[\w\s]+?)\s+'
+    expr_notes = r'(?P<notes>[\d.\s]+)\s*'
+    expresion = re.compile(expr_id + expr_nom + expr_notes) # + una o más veces, * 0 o más veces
+    alumnos = {}
+
+    with open(ficAlumnos, 'rt') as fpAlumnos:
+        for linea in fpAlumnos:
+            match = expresion.search(linea)
+            if match is not None:
+                id = int(match['id'])
+                nom = match['nom'].strip()
+                notes = [float(n) for n in match['notes'].split()]
+                alumnos[nom]= Alumno(nom, id, notes)
+    return alumnos
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod(optionflags=doctest.NORMALIZE_WHITESPACE)
+```
+
+```python
+import re
+
+def normalizaHoras(ficText, ficNorm):
+
+    """
+    Función que normaliza horas de un fichero de texto a un formato HH:MM
+    """
+    def rojo(texto):
+        return f'<span style = "color:red">{texto}</span>' #devuelve en rojo las expresiones incorrectas
+
+    def reemplaza(match):
+        grupo = match.group()
+
+        # 8h30 o 08h5m
+
+        h_m = re.match(r'^(\d{1,2})h(?:(\d{1,2})m?)?$', grupo)
+        if h_m:
+            h = int(h_m.group(1))
+            m_str = h_m.group(2)
+            m = int(m_str) if m_str else 0
+            if  h < 24 and m <60:
+                return f'{h}:{m:02d}'
+            else:
+                return rojo(grupo)
+        
+        # 8:30 o 18:05
+
+        h_p_m = re.match(r'^(\d{1,2}):(\d{1,2})$', grupo)
+        if h_p_m:
+            h = int(h_p_m.group(1))
+            m_str = h_p_m.group(2)
+            m = int(m_str)
+            if  h < 24 and m <60 and (m_str is None or len(m_str) == 2):
+                return f'{h}:{m:02d}'
+            else:
+                return rojo(grupo)
+        
+        # hora hablada
+
+        hablado = re.match(r'^(\d{1,2})\s*(en punto|y cuarto|y media|menos cuarto)$', grupo)
+        if hablado:
+            h = int(hablado.group(1))
+            f = hablado.group(2)
+
+            if not (1 <= h <=12):
+                return rojo(grupo) # horas habladas correctamente son entre 1 y 12
+
+            if f == 'en punto':
+                m = 0
+            elif f == 'y cuarto':
+                m = 15
+            elif f == 'y media':
+                m = 30
+            elif f == 'menos cuarto':
+                h -= 1
+                if h == 0:
+                    h = 12
+                m = 45
+            return f'{h}:{m:02d}'
+        
+        hablado_momento = re.match(r'^(\d{1,2})\s*(en punto|y cuarto|y media|menos cuarto)\s+de la\s+(mañana|tarde|noche)$', grupo)
+
+        if hablado_momento:
+            h = int(hablado_momento.group(1))
+            f = hablado_momento.group(2)
+            p = hablado_momento.group(3)
+
+            # según hora hablada
+
+            if f == 'en punto':
+                m = 0
+            elif f == 'y cuarto':
+                m = 15
+            elif f == 'y media':
+                m = 30
+            elif f == 'menos cuarto':
+                h -= 1
+                if h == 0:
+                    h = 12
+                m = 45
+        
+            # según momento del día 
+
+            if p == 'mañana':
+                if 1 <= h <= 11:
+                    pass
+            elif p == 'tarde':
+                if 1 <= h <= 7:
+                    h += 12     
+            elif p == 'noche':
+                if 8 <= h <= 11:
+                    h += 12
+                elif h == 12:
+                    return '00:00'
+                        
+            return f'{h}:{m:02d}'
+        
+        # momento del día
+
+        momento = re.match(r'^(\d{1,2})\s+de la\s+(mañana|tarde|noche)$', grupo)
+        if momento:
+            h = int(momento.group(1))
+            m = 0
+            p = momento.group(2)
+            if p == 'mañana':
+                if 1 <= h <= 11:
+                    pass
+                return rojo(grupo)
+            elif p == 'tarde':
+                if 1 <= h <= 7:
+                    h += 12
+                return rojo(grupo)
+            elif p == 'noche':
+                if 8 <= h <= 11:
+                    h += 12
+                elif h == 12:
+                    return '00:00'
+                else:
+                    return rojo(grupo)
+                
+            return f'{h}:{m:02d}'
+        
+        return rojo(grupo)
+    
+             
+    
+    compila= re.compile (r'\b\d{1,2}h(?:\d{1,2}m?)?'r'|\b\d{1,2}:\d{1,2}'r'|\b\d{1,2}\s*(?:en punto|y cuarto|y media|menos cuarto)(?:\s+de la\s+(?:mañana|tarde|noche))?'r'|\b\d{1,2}\s+de la\s+(?:mañana|tarde|noche)'r'|(?<=\blas\s)\d{1,2}\b'r'|(?<=\ba las\s)\d{1,2}\b')
+    # r'|(?<=\blas\s)\d{1,2}\b'r'|(?<=\ba las\s)\d{1,2}\b' --> números precedidos por a las o las
+
+    with open(ficText, encoding = 'utf-8') as entrada, open(ficNorm, 'w', encoding = 'utf-8') as salida:
+        salida.write('<htm><body><pre style="font-family:monospace;">\n')
+        for linea in entrada:
+            nueva = compila.sub(reemplaza, linea)
+            nueva = re.sub(r'\s+de la (mañana|tarde|noche)', '', nueva, flags=re.IGNORECASE) # Elimina 'de la' y 'mañana', 'tarde', 'noche'
+            salida.write(nueva)
+        salida.write('</pre></body></html>')
+    
+normalizaHoras('horas.txt', 'horas_normalizadas.txt')
+normalizaHoras('horas.txt', 'horas_normalizadas.html') # para que se vea el color rojo
+```
 
 ##### Subida del resultado al repositorio GitHub y *pull-request*
 
